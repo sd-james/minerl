@@ -3,6 +3,7 @@ import collections
 import gym
 
 from minerl.herobraine.env_spec import EnvSpec
+from minerl.herobraine.env_specs.chest_clock_specs import ChestClock
 from minerl.herobraine.env_specs.treechop_specs import Treechop
 from minerl.herobraine.env_specs.navigate_specs import Navigate
 from minerl.herobraine.env_specs.obtain_specs import ObtainDiamond, ObtainDiamondSurvival, ObtainIronPickaxe, Obtain, ObtainDiamondDebug
@@ -25,6 +26,20 @@ MINERL_OBTAIN_DIAMOND_DENSE_V0 = ObtainDiamond(dense=True)
 
 MINERL_OBTAIN_IRON_PICKAXE_V0 = ObtainIronPickaxe(dense=False)
 MINERL_OBTAIN_IRON_PICKAXE_DENSE_V0 = ObtainIronPickaxe(dense=True)
+
+MINERL_CHEST_CLOCK_0_V0 = ChestClock(version=0, stop_early=False)
+MINERL_CHEST_CLOCK_1_V0 = ChestClock(version=1, stop_early=False)
+MINERL_CHEST_CLOCK_2_V0 = ChestClock(version=2, stop_early=False)
+MINERL_CHEST_CLOCK_3_V0 = ChestClock(version=3, stop_early=False)
+MINERL_CHEST_CLOCK_4_V0 = ChestClock(version=4, stop_early=False)
+
+MINERL_CHEST_CLOCK_EARLY_STOP_0_V0 = ChestClock(version=0, stop_early=True)
+MINERL_CHEST_CLOCK_EARLY_STOP_1_V0 = ChestClock(version=1, stop_early=True)
+MINERL_CHEST_CLOCK_EARLY_STOP_2_V0 = ChestClock(version=2, stop_early=True)
+MINERL_CHEST_CLOCK_EARLY_STOP_3_V0 = ChestClock(version=3, stop_early=True)
+MINERL_CHEST_CLOCK_EARLY_STOP_4_V0 = ChestClock(version=4, stop_early=True)
+
+
 
 # # prototype envs
 # # TODO: Actually make these work and correct, it'll be good to release these.

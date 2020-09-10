@@ -19,23 +19,23 @@
 
 import collections
 
-import copy
 import json
 import logging
 import os
-import random
 import socket
 import struct
 import time
 import uuid
-from copy import copy, deepcopy
+from copy import deepcopy
 from typing import Iterable
 
 import gym
 import gym.envs.registration
 import gym.spaces
 import numpy as np
+from gym.utils import atomic_write
 from lxml import etree
+
 from minerl.env import comms
 from minerl.env.comms import retry
 from minerl.env.malmo import InstanceManager, malmo_version, launch_queue_logger_thread
@@ -74,6 +74,7 @@ MAX_WAIT = 80  # After this many MALMO_BUSY's a timeout exception will be thrown
 SOCKTIME = 60.0 * 4  # After this much time a socket exception will be thrown.
 MINERL_CUSTOM_ENV_ID = 'MineRLCustomEnv'  # Default id for a MineRLEnv
 TICK_LENGTH = 0.05
+
 
 class MineRLEnv(gym.Env):
     """The MineRLEnv class.
@@ -145,7 +146,7 @@ class MineRLEnv(gym.Env):
 
     def _get_new_instance(self, port=None, instance_id=None):
         """
-        Gets a new instance and sets up a logger if need be. 
+        Gets a new instance and sets up a logger if need be.
         """
 
         if not port is None:
@@ -251,7 +252,7 @@ class MineRLEnv(gym.Env):
                 </HumanInteraction>""".format(self.interact_port, self.max_players))
             # Update the xml
 
-            ss  = self.xml.find(".//" + self.ns + 'ServerSection')
+            ss = self.xml.find(".//" + self.ns + 'ServerSection')
             ss.insert(0, hi)
 
         video_producers = self.xml.findall('.//' + self.ns + 'VideoProducer')
@@ -265,7 +266,6 @@ class MineRLEnv(gym.Env):
                 want_depth == "true" or want_depth == "1" or want_depth is True) else 3
         # print(etree.tostring(self.xml))
         self._last_ac = None
-
 
         self.has_init = True
 
@@ -315,7 +315,7 @@ class MineRLEnv(gym.Env):
 
         try:
             if info['equipped_items.mainhand.type'] not in bottom_env_spec.observation_space.spaces[
-                    'equipped_items.mainhand.type']:
+                'equipped_items.mainhand.type']:
                 info['equipped_items.mainhand.type'] = "other"  # Todo: use handlers. TODO: USE THEM<
         except Exception as e:
             pass
@@ -361,17 +361,16 @@ class MineRLEnv(gym.Env):
             return nested_dict
 
         obs_dict = recursive_update(obs_dict, info)
-        
 
         # Now we wrap
         if isinstance(self.env_spec, EnvWrapper):
             obs_dict = self.env_spec.wrap_observation(obs_dict)
-            
-         
+
         self._last_pov = obs_dict['pov']
         self._last_obs = obs_dict
-
-        return obs_dict
+        # return the info dict too!
+        del info['pov']
+        return obs_dict, info
 
     def _process_action(self, action_in) -> str:
         """
@@ -387,13 +386,12 @@ class MineRLEnv(gym.Env):
         while isinstance(bottom_env_spec, EnvWrapper):
             bottom_env_spec = bottom_env_spec.env_to_wrap
 
-
         # TODO: Decide if we want to remove assertions.
         action_str = []
         for act in action_in:
             # Process enums.
             if isinstance(bottom_env_spec.action_space.spaces[act], spaces.Enum):
-                if isinstance(action_in[act],   int):
+                if isinstance(action_in[act], int):
                     action_in[act] = bottom_env_spec.action_space.spaces[act].values[action_in[act]]
                 else:
                     assert isinstance(
@@ -418,7 +416,6 @@ class MineRLEnv(gym.Env):
 
             action_str.append(
                 "{} {}".format(act, str(action_in[act])))
-            
 
         return "\n".join(action_str)
 
@@ -434,14 +431,14 @@ class MineRLEnv(gym.Env):
         .. code-block:: python
 
             env = gym.make('MineRL...')
-            
+
             # set the environment to allow interactive connections on port 6666
             # and slow the tick speed to 6666.
-            env.make_interactive(port=6666, realtime=True) 
+            env.make_interactive(port=6666, realtime=True)
 
             # reset the env
             env.reset()
-            
+
             # interact as normal.
             ...
 
@@ -455,7 +452,7 @@ class MineRLEnv(gym.Env):
 
         The interactor will disconnect when the mission resets, but you can connect again with the same command.
         If an interactor is already started, it won't need to be relaunched when running the commnad a second time.
-        
+
 
         Args:
             port (int):  The interaction port
@@ -467,7 +464,6 @@ class MineRLEnv(gym.Env):
         self._is_real_time = realtime
         self.interact_port = port
         self.max_players = max_players
-            
 
     @staticmethod
     def _hello(sock):
@@ -508,7 +504,8 @@ class MineRLEnv(gym.Env):
             self._init_mission()
 
             self.done = False
-            return self._peek_obs()
+            obs, info = self._peek_obs()
+            return obs
         except (socket.timeout, socket.error) as e:
             logger.error("Failed to reset (socket error), trying again!")
             self._clean_connection()
@@ -536,7 +533,7 @@ class MineRLEnv(gym.Env):
                 "Connection with Minecraft client cleaned more than once; restarting.")
             if self.instance:
                 self.instance.kill()
-            
+
             self.instance = self._get_new_instance(instance_id=self.instance.instance_id)
 
             self.had_to_clean = False
@@ -574,8 +571,6 @@ class MineRLEnv(gym.Env):
             self.integratedServerPort = port
             logger.warn("MineRL agent is public, connect on port {} with Minecraft 1.11".format(port))
             # Todo make a launch command.
-            
-
 
         return self._process_observation(obs, info)
 
@@ -592,7 +587,7 @@ class MineRLEnv(gym.Env):
 
         Note:
         THIS MUST BE CALLED BEFORE :code:`env.reset()`
-        
+
         Args:
             seed (long, optional):  Defaults to 42.
             seed_spaces (bool, option): If the observation space and action space shoud be seeded. Defaults to True.
@@ -603,13 +598,17 @@ class MineRLEnv(gym.Env):
             self.observation_space.seed(self._seed)
             self.action_space.seed(self._seed)
 
-
     def step(self, action):
 
         withinfo = MineRLEnv.STEP_OPTIONS == 0 or MineRLEnv.STEP_OPTIONS == 2
 
         # Process the actions.
-        malmo_command = self._process_action(action)
+        from envs._domain_impl.actions import Action
+        if isinstance(action, Action):
+            malmo_command = action.value
+        else:
+            malmo_command = self._process_action(action)
+
         try:
             if not self.done:
 
@@ -635,18 +634,16 @@ class MineRLEnv(gym.Env):
                     info = {}
 
                 # Process the observation and done state.
-                out_obs = self._process_observation(obs, info)
+                out_obs, info = self._process_observation(obs, info)
                 self.done = (done == 1)
-                
+
                 if self._is_real_time:
                     t0 = time.time()
                     # Todo: Add catch-up
                     time.sleep(max(0, TICK_LENGTH - (t0 - self._last_step_time)))
                     self._last_step_time = time.time()
 
-
-
-                return out_obs, reward, self.done, {}
+                return out_obs, reward, self.done, info
             else:
                 raise RuntimeError(
                     "Attempted to step an environment with done=True")
@@ -662,20 +659,20 @@ class MineRLEnv(gym.Env):
 
     def _renderObs(self, obs, ac=None):
         if self.viewer is None:
-            from minerl.viewer.trajectory_display import HumanTrajectoryDisplay, VectorTrajectoryDisplay
+            from minerl.viewer import HumanTrajectoryDisplay, VectorTrajectoryDisplay
             vector_display = 'Vector' in self.env_spec.name
-            header= self.env_spec.name
+            header = self.env_spec.name
             # TODO: env_specs should specify renderers.
-            instructions='{}.render()\n Actions listed below.'.format(header)
+            instructions = '{}.render()\n Actions listed below.'.format(header)
             subtext = 'render'
-            cum_rewards=None
+            cum_rewards = None
             if not vector_display:
-                self.viewer= HumanTrajectoryDisplay(
+                self.viewer = HumanTrajectoryDisplay(
                     header, subtext, instructions=instructions,
                     cum_rewards=cum_rewards)
 
             else:
-                self.viewer= VectorTrajectoryDisplay(
+                self.viewer = VectorTrajectoryDisplay(
                     header, subtext, instructions=instructions,
                     cum_rewards=cum_rewards)
         # Todo: support more information to the render
@@ -751,7 +748,7 @@ class MineRLEnv(gym.Env):
             port, = struct.unpack('!I', reply)
         sock.close()
         # print("Found mission integrated server port " + str(port))
-        return  port
+        return port
         # e = self.xml.find(self.ns + 'MinecraftServerConnection')
         # if e is not None:
         #     e.attrib['port'] = str(self.integratedServerPort)
@@ -783,8 +780,8 @@ class MineRLEnv(gym.Env):
         return self.exp_uid + ":" + str(self.role) + ":" + str(self.resets)
 
 
-def make():
-    return Env()
+# def make():
+#     return Env()
 
 
 def register(id, **kwargs):
