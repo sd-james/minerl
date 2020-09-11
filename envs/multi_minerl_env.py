@@ -8,7 +8,7 @@ from envs.minerl_env import MineRLEnv
 from envs.multiview_env import MultiViewEnv, View
 
 
-class MultiMinecraftEnv(MultiViewEnv, MineRLEnv):
+class MultiMineRLEnv(MultiViewEnv, MineRLEnv):
 
     def __init__(self, version_number: int, **kwargs):
         super().__init__(version=version_number, **kwargs)
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     np.random.seed(0)
 
     for i in range(0, 5):
-        env = MultiMinecraftEnv(i)
+        env = MultiMineRLEnv(i)
         solved = False
         while not solved:
             state, obs = env.reset()

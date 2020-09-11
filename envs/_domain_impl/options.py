@@ -1,3 +1,4 @@
+import math
 import random
 import time
 from abc import abstractmethod, ABC
@@ -12,19 +13,28 @@ N_OPTIONS = 9
 
 SLEEP = False
 
-def sleep(duration):
 
+def get_reward(x, z, target_x, target_z):
+    return -math.sqrt((x - target_x) ** 2 + (z - target_z) ** 2)
+
+
+def sleep(duration):
     if SLEEP:
         time.sleep(duration)
 
+
 def go_to(env, x, y, z):
-    return env.step(Teleport(x, y, z))
+    a, b = env.get_x(), env.get_z()
+    obs, _, done, info = env.step(Teleport(x, y, z))
+    return obs, get_reward(a, b, x, z), done, info
+
 
 class Option(ABC):
 
     @abstractmethod
     def execute(self, env):
         pass
+
 
 class WalkToItem(Option):
     def __init__(self, item):
@@ -35,7 +45,6 @@ class WalkToItem(Option):
         self.object = item
 
     def execute(self, env):
-        x, z = env.get_x(), env.get_z()
         env.step(Yaw(0))
         sleep(0.2)
         obs, reward, done, info = go_to(env, self.target_x + 0.5, env.get_y(), self.target_z - 1.5)
@@ -77,6 +86,7 @@ class AttackItem(Option):
         self.item.dirty = True
         # self.item.in_front = True
         obs = env.redraw()
+        reward = -10
         return obs, reward, done, info
 
     def __str__(self):
@@ -106,6 +116,8 @@ class PickupItem(Option):
             print("FAIL PICK!!")
             if self.early_stop:
                 done = True
+                reward = -100
+
         return obs, reward, done, info
 
     def __str__(self):
@@ -199,6 +211,7 @@ class CraftItem(Option):
         obs, reward, done, info = env.step(Craft(self.item))
         obs, _, _, info = env.step(Turn(0.0001))
         sleep(0.2)
+        reward = 10
         return obs, reward, done, info
 
 
@@ -225,7 +238,7 @@ class OpenChest(Option):
                 reward += r
         self.chest.dirty = True
         obs = env.redraw()
-        reward += 10
+        reward = 100
         info['goal_achieved'] = True
         return obs, reward, True, info
 
@@ -266,7 +279,7 @@ class ToggleDoor(Option):
             obs = env.redraw()
             # TODO FIX
             # return obs, reward, True, info
-            return obs, reward, done, info
+            return obs, -10, done, info
         else:
             if self.door.closed:
                 return self.open_door(env)
@@ -294,7 +307,7 @@ class ToggleDoor(Option):
         self.door.dirty = True
         obs = env.redraw()
         # TODO FIX
-        return obs, reward, done, info
+        return obs, -10, done, info
 
     def close_door(self, env):
         curr = env.get_yaw()
@@ -323,7 +336,7 @@ class ToggleDoor(Option):
             # print("Door open")
         self.door.dirty = True
         obs = env.redraw()
-        return obs, reward, done, info
+        return obs, -10, done, info
 
 
 def admissable_actions(env, doors, objects, early_stop=False):
@@ -393,7 +406,7 @@ def admissable_actions(env, doors, objects, early_stop=False):
             if env.has_item('gold_ingot', 9) and env.has_item('redstone'):
                 actions.append(CraftItem([(4, 'gold_ingot'), (1, 'redstone')], 'clock'))
 
-        #if object.can_attack(x, z) and object.type == 'chest':
+        # if object.can_attack(x, z) and object.type == 'chest':
         if env.has_item('clock') and object.can_attack(x, z) and object.type == 'chest':
             actions.append(OpenChest(object))
 
@@ -411,5 +424,3 @@ if __name__ == '__main__':
         next_observation, reward, done, _ = action.execute(env)
         if done:
             break
-
-
