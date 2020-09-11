@@ -4,11 +4,11 @@ from typing import Tuple, Any
 import numpy as np
 from gym import Space
 
-from envs.minecraft_env import MinecraftEnv
-from envs.multiview_env import MultiViewEnv
+from envs.minerl_env import MineRLEnv
+from envs.multiview_env import MultiViewEnv, View
 
 
-class MultiMinecraftEnv(MultiViewEnv, MinecraftEnv):
+class MultiMinecraftEnv(MultiViewEnv, MineRLEnv):
 
     def __init__(self, version_number: int, **kwargs):
         super().__init__(version=version_number, **kwargs)
@@ -44,7 +44,7 @@ class MultiMinecraftEnv(MultiViewEnv, MinecraftEnv):
         return state, observation
 
     def __str__(self):
-        return "MineCraftV{}".format(self._version_number)
+        return "MineRL-v{}".format(self._version_number)
 
     def describe_option(self, option: int) -> str:
         return self.option_names[option]

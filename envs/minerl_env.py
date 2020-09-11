@@ -48,7 +48,7 @@ def get_dir_name(file):
     return os.path.dirname(os.path.realpath(file))
 
 
-class MinecraftEnv(gym.Env):
+class MineRLEnv(gym.Env):
     metadata = {'render.modes': ['rgb_array', 'human']}
 
     """
