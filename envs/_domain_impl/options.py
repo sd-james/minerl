@@ -103,7 +103,11 @@ class PickupItem(Option):
         self.early_stop = early_stop
 
     def execute(self, env):
-        obs, reward, done, info = go_to(env, self.target_x, env.get_y(), self.target_z)
+        y = env.get_y()
+        for delta_x in [-0.5, 0, 0.5]:
+            for delta_z in [-0.5, 0, 0.5]:
+                go_to(env, self.target_x + delta_x, y, self.target_z + delta_z)
+        obs, reward, done, info = go_to(env, self.target_x, y, self.target_z)
         sleep(0.2)
         obs, _, _, info = env.step(Turn(0.0001))
         sleep(0.2)

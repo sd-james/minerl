@@ -83,7 +83,7 @@ class TeleportWrapper(gym.Wrapper):
 
 
     def perturb(self):
-        time.sleep(0.2)
+  #      time.sleep(0.2)
         x, y, z, yaw, pitch = self.get_x(), self.get_y(), self.get_z(), self.get_yaw(), self.get_pitch()
         obs = self.set(x, y, z, yaw, pitch, noise=0.7)
         self.set(x, y, z, yaw, pitch, noise=0)
@@ -99,7 +99,7 @@ class TeleportWrapper(gym.Wrapper):
         obs = None
         for action in actions:
             obs, _, _, _ = self.step(action)
-            time.sleep(0.01)
+            #time.sleep(0.01)
         # time.sleep(0.2)
         return obs
 
@@ -109,7 +109,7 @@ class TeleportWrapper(gym.Wrapper):
         obs = None
         for action in actions:
             obs, _, _, _ = self.step(action)
-            time.sleep(0.01)
+           # time.sleep(0.01)
         # time.sleep(0.2)
         return obs
 
