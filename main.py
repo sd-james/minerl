@@ -1,4 +1,5 @@
 import pickle
+import time
 
 import cv2
 import gym
@@ -25,6 +26,27 @@ def add(data, s, a, s_prime):
 
 
 if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    env = MineRLEnv(version=0)
+    for episode in trange(5, desc='Episode'):
+        state = env.reset()
+        for _ in range(1000):
+            action = np.random.choice(env.admissable_actions())
+            print(action)
+            print(env.admissable_actions())
+            next_state, reward, done, info = env.step(action)
+            state = next_state
+            print(state[9])
+            time.sleep(5)
+            if done:
+                found = True
+                break
+        env.close()
+
+    exit(0)
+
     # import logging
     # logging.basicConfig(level=logging.DEBUG)
     # path = deque([1, 1, 0, 0, 1, 2, 2, 3, 1, 1, 2, 1, 1])
