@@ -92,12 +92,16 @@ class Door(Object):
         pos = env.get_x(), env.get_z()
 
         sign = -1 if moving_north else 1
-        if self.z + sign * 1.5 == pos[1] and self.x + 0.5 == pos[0]:
+        if self.close(self.z + sign * 2.5, pos[1]) and self.close(self.x + 0.5, pos[0]):
+        # if self.z + sign * 1.5 == pos[1] and self.x + 0.5 == pos[0]:
             # can't walk to a door if we're already at it!
             return False
         if moving_north:
             return pos in self.south_rect
         return pos in self.north_rect
+
+    def close(self, x, y):
+        return abs(x-y) < 0.1
 
     def can_walk_through(self, env, moving_north=True):
         if self.closed:
@@ -132,8 +136,8 @@ class Door(Object):
             return False
 
         sign = -1 if moving_north else 1
-        # rectangle = Rect(self.x - 1, self.z + sign * 4, self.x + 1, self.z + sign * 2)
-        rectangle = Rect(self.x - 1, self.z + sign * 3, self.x + 1, self.z + sign * 1.5)
+        # rectangle = Rect(self.x - 1, self.z + sign * 3, self.x + 1, self.z + sign * 1.5)
+        rectangle = Rect(self.x - 1, self.z + sign * 3, self.x + 1, self.z + sign * 2)
 
         pos = env.get_x(), env.get_z()
         return pos in rectangle
@@ -141,8 +145,8 @@ class Door(Object):
     def is_close(self, env, moving_north=True):
 
         sign = -1 if moving_north else 1
-        # rectangle = Rect(self.x - 1, self.z + sign * 4, self.x + 1, self.z + sign * 2)
-        rectangle = Rect(self.x - 1, self.z + sign * 3, self.x + 1, self.z + sign * 1.5)
+        # rectangle = Rect(self.x - 1, self.z + sign * 3, self.x + 1, self.z + sign * 1.5)
+        rectangle = Rect(self.x - 1, self.z + sign * 3, self.x + 1, self.z + sign * 2)
 
         pos = env.get_x(), env.get_z()
         return pos in rectangle

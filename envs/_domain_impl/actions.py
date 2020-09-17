@@ -11,7 +11,7 @@ USE_B = 6
 NOISY = True
 
 
-def noisy(x, scale=0.1) -> float:
+def noisy(x, scale=0.05) -> float:
     if not NOISY:
         return x
 
@@ -105,10 +105,10 @@ class Turn(Action):
 
 class Teleport(Action):
 
-    def __init__(self, x=None, y=None, z=None):
-        self.x = noisy(x)
+    def __init__(self, x=None, y=None, z=None, noise=False):
+        self.x = x if not noise else noisy(x, scale=0.1)
+        self.z = z if not noise else noisy(z, scale=0.05)
         self.y = y
-        self.z = noisy(z, scale=0.05)
 
     @property
     def value(self):
@@ -123,8 +123,11 @@ class Teleport(Action):
 
 class Yaw(Action):
 
-    def __init__(self, yaw):
-        self.yaw = noisy(yaw)
+    def __init__(self, yaw, noise=False):
+        # if noise:
+        #     self.yaw = noisy(yaw, scale=0.05)
+        # else:
+        self.yaw = yaw
 
     @property
     def value(self):

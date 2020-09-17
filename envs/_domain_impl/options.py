@@ -23,9 +23,10 @@ def sleep(duration):
         time.sleep(duration)
 
 
-def go_to(env, x, y, z):
+def go_to(env, x, y, z, noisy):
     a, b = env.get_x(), env.get_z()
-    obs, _, done, info = env.step(Teleport(x, y, z))
+    obs, _, done, info = env.step(Teleport(x, y, z, noise=noisy))
+    env.step(Teleport(x, y, z, noise=False))
     return obs, get_reward(a, b, x, z), done, info
 
 
@@ -37,8 +38,9 @@ class Option(ABC):
 
 
 class WalkToItem(Option):
-    def __init__(self, item):
+    def __init__(self, item, noisy=True):
         self.id = 0
+        self.noisy = noisy
         self.target_x = item.x
         self.target_z = item.z
         self.item = item
@@ -47,7 +49,8 @@ class WalkToItem(Option):
     def execute(self, env):
         env.step(Yaw(0))
         sleep(0.2)
-        obs, reward, done, info = go_to(env, self.target_x + 0.5, env.get_y(), self.target_z - 1.5)
+        obs, reward, done, info = go_to(env, self.target_x + 0.5, env.get_y(), self.target_z - 2.5, noisy=self.noisy)
+        # obs, reward, done, info = go_to(env, self.target_x + 0.5, env.get_y(), self.target_z - 1.5)
         sleep(0.2)
         obs, _, _, info = env.step(Turn(0.0001))
         sleep(0.2)
@@ -59,8 +62,10 @@ class WalkToItem(Option):
 
 
 class AttackItem(Option):
-    def __init__(self, item):
+    def __init__(self, item, noisy=True):
         self.id = 1
+        self.noisy = noisy
+
         self.target_x = item.x
         self.target_z = item.z
         self.item = item
@@ -71,9 +76,10 @@ class AttackItem(Option):
         change_pitch = env.get_y() >= self.item.y
 
         if change_pitch:
-            env.step(Pitch(15))
+            # env.step(Pitch(15))
+            env.step(Pitch(30))
             sleep(0.2)
-        for _ in range(30):
+        for _ in range(20):
             obs, reward, done, info = env.step(Attack(1))
         sleep(0.2)
         obs, _, _, info = env.step(Attack(0))
@@ -94,8 +100,10 @@ class AttackItem(Option):
 
 
 class PickupItem(Option):
-    def __init__(self, item, early_stop=False):
+    def __init__(self, item, early_stop=False, noisy=True):
         self.id = 2
+        self.noisy = noisy
+
         self.target_x = item.x
         self.target_z = item.z
         self.item = item
@@ -106,8 +114,8 @@ class PickupItem(Option):
         y = env.get_y()
         for delta_x in [-0.5, 0, 0.5]:
             for delta_z in [-0.5, 0, 0.5]:
-                go_to(env, self.target_x + delta_x, y, self.target_z + delta_z)
-        obs, reward, done, info = go_to(env, self.target_x, y, self.target_z)
+                go_to(env, self.target_x + delta_x, y, self.target_z + delta_z, noisy=self.noisy)
+        obs, reward, done, info = go_to(env, self.target_x, y, self.target_z, noisy=self.noisy)
         sleep(0.2)
         obs, _, _, info = env.step(Turn(0.0001))
         sleep(0.2)
@@ -117,6 +125,7 @@ class PickupItem(Option):
             self.item.dirty = True
             obs = env.redraw()
         else:
+            self.item.picked = True  # we tried, it failed. Let's move on
             print("FAIL PICK!!")
             if self.early_stop:
                 done = True
@@ -129,18 +138,20 @@ class PickupItem(Option):
 
 
 class WalkDoor(Option):
-    def __init__(self, door, moving_north=True):
+    def __init__(self, door, moving_north=True, noisy=True):
         door_x, door_z = door.x, door.z
+        self.noisy = noisy
         self.target_x = door_x + 0.5
         sign = -1 if moving_north else 1
-        self.target_z = door_z + sign * 1.5
+        # self.target_z = door_z + sign * 1.5
+        self.target_z = door_z + sign * 2.5
         self.yaw = 0 if moving_north else 180
         self.object = door
 
     def execute(self, env):
         env.step(Yaw(self.yaw))
         sleep(0.2)
-        obs, reward, done, info = go_to(env, self.target_x, env.get_y(), self.target_z)
+        obs, reward, done, info = go_to(env, self.target_x, env.get_y(), self.target_z, noisy=self.noisy)
         sleep(0.2)
         obs, _, _, info = env.step(Turn(0.0001))
         sleep(0.2)
@@ -152,8 +163,8 @@ class WalkDoor(Option):
 
 
 class WalkNorthDoor(WalkDoor):
-    def __init__(self, door):
-        super().__init__(door, True)
+    def __init__(self, door, noisy=True):
+        super().__init__(door, True, noisy=noisy)
         self.id = 3
 
     def __str__(self):
@@ -161,8 +172,8 @@ class WalkNorthDoor(WalkDoor):
 
 
 class WalkSouthDoor(WalkDoor):
-    def __init__(self, door):
-        super().__init__(door, False)
+    def __init__(self, door, noisy=True):
+        super().__init__(door, False, noisy=noisy)
         self.id = 4
 
     def __str__(self):
@@ -170,8 +181,10 @@ class WalkSouthDoor(WalkDoor):
 
 
 class WalkThroughDoor(Option):
-    def __init__(self, door, moving_north=True):
+    def __init__(self, door, moving_north=True, noisy=True):
         self.id = 5
+        self.noisy = noisy
+
         door_x, door_z = door.x, door.z
         self.target_x = door_x + 0.5
         sign = 1 if moving_north else -1
@@ -182,7 +195,7 @@ class WalkThroughDoor(Option):
     def execute(self, env):
         env.step(Yaw(self.yaw))
         sleep(0.2)
-        obs, reward, done, info = go_to(env, self.target_x, env.get_y(), self.target_z)
+        obs, reward, done, info = go_to(env, self.target_x, env.get_y(), self.target_z, noisy=self.noisy)
         sleep(0.2)
         obs, _, _, info = env.step(Turn(0.0001))
         sleep(0.2)
@@ -251,16 +264,17 @@ class ToggleDoor(Option):
     def __str__(self):
         return "Toggle Door "
 
-    def __init__(self, door):
+    def __init__(self, door, noisy=True):
         self.door = door
         self.id = 8
+        self.noisy = noisy
         self.object = door
 
     def execute(self, env):
         if self.door.puzzle:
             curr = env.get_yaw()
-            yaw = -35
-
+            # yaw = -35
+            yaw = -25
             actions = [Yaw(yaw), 0.2, Use(True), Use(False), 0.1, Yaw(curr), 0.1, Turn(0.0001)]
             obs = None
             reward = 0
@@ -342,89 +356,3 @@ class ToggleDoor(Option):
         obs = env.redraw()
         return obs, -10, done, info
 
-
-def admissable_actions(env, doors, objects, early_stop=False):
-    actions = []
-
-    for i, door in enumerate(doors):
-
-        if door.can_reach(env, moving_north=True):
-            #   print("Can walk north to door {}".format(i + 1))
-            actions.append(WalkSouthDoor(door))
-        # else:
-        #     print("Cannot walk north to door {}".format(i + 1))
-
-        if door.can_reach(env, moving_north=False):
-            #  print("Can walk south to door {}".format(i + 1))
-            actions.append(WalkNorthDoor(door))
-        # else:
-        #     print("Cannot walk south to door {}".format(i + 1))
-
-        if door.can_toggle(env, moving_north=True):
-            actions.append(ToggleDoor(door))
-            # print("Can toggle north door {}".format(i + 1))
-        # else:
-        #     print("Cannot open north door {}".format(i + 1))
-
-        if door.can_toggle(env, moving_north=False):
-            actions.append(ToggleDoor(door))
-            #   print("Can toggle south door {}".format(i + 1))
-        # else:
-        #     print("Cannot open south door {}".format(i + 1))
-
-        # TODO can only walk through door if standing AT door!!
-
-        if door.is_close(env, moving_north=True) and door.can_walk_through(env, moving_north=True):
-            #  print("Can walk north through door {}".format(i + 1))
-            actions.append(WalkThroughDoor(door, moving_north=True))
-        # else:
-        #     print("Cannot walk north through door {}".format(i + 1))
-
-        if door.is_close(env, moving_north=False) and door.can_walk_through(env, moving_north=False):
-            #  print("Can walk south through door {}".format(i + 1))
-            actions.append(WalkThroughDoor(door, moving_north=False))
-            # else:
-            #     print("Cannot walk south through door {}".format(i + 1))
-
-    x, z = env.get_x(), env.get_z()
-    for i, object in enumerate(objects):
-
-        if object.can_reach(x, z):
-            #  print("Can walk to {}".format(object.type))
-            actions.append(WalkToItem(object))
-
-        if object.can_pick(x, z):
-            #   print("Can pick up {}".format(object.type))
-            actions.append(PickupItem(object, early_stop=early_stop))
-
-        if env.has_item("diamond_pickaxe") and object.can_attack(x, z):
-            #  print("Can attack {}".format(object.type))
-            if object.attackable:
-                actions.append(AttackItem(object))
-
-        if object.type == 'crafting_table' and object.can_attack(x, z):
-
-            if env.has_item('gold_block'):
-                actions.append(CraftItem([(1, 'gold_block')], 'gold_ingot'))
-
-            if env.has_item('gold_ingot', 9) and env.has_item('redstone'):
-                actions.append(CraftItem([(4, 'gold_ingot'), (1, 'redstone')], 'clock'))
-
-        # if object.can_attack(x, z) and object.type == 'chest':
-        if env.has_item('clock') and object.can_attack(x, z) and object.type == 'chest':
-            actions.append(OpenChest(object))
-
-    return actions
-
-
-if __name__ == '__main__':
-    env, _, _ = Task.generate(31)
-    observation, doors, items, = env.reset(seed=31)
-
-    for x in range(100):
-        admissible_actions, disallowed = Task.admissable_actions(env, doors, items)
-        action = random.choice(admissible_actions)
-        print(action)
-        next_observation, reward, done, _ = action.execute(env)
-        if done:
-            break

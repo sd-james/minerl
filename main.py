@@ -1,5 +1,6 @@
 import pickle
 import time
+from collections import deque
 
 import cv2
 import gym
@@ -26,41 +27,19 @@ def add(data, s, a, s_prime):
 
 
 if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
-
-    env = MineRLEnv(version=0)
-    for episode in trange(5, desc='Episode'):
-        state = env.reset()
-        for _ in range(1000):
-            action = np.random.choice(env.admissable_actions())
-            print(action)
-            print(env.admissable_actions())
-            next_state, reward, done, info = env.step(action)
-            state = next_state
-            print(state[9])
-            time.sleep(5)
-            if done:
-                found = True
-                break
-        env.close()
-
-    exit(0)
-
-    # import logging
-    # logging.basicConfig(level=logging.DEBUG)
-    # path = deque([1, 1, 0, 0, 1, 2, 2, 3, 1, 1, 2, 1, 1])
 
     data = list()
-    for version in trange(1, 2, desc='Task'):
+    for version in trange(0, 5, desc='Task'):
         found = False
+
         env = MineRLEnv(version=version)
         for episode in trange(5, desc='Episode'):
             state = env.reset()
             for _ in range(1000):
-                action = np.random.choice(env.admissable_actions())
+                allowed = env.admissable_actions()
+                action = np.random.choice(allowed)
+                print(allowed)
                 print(action)
-                print(env.admissable_actions())
                 next_state, reward, done, info = env.step(action)
                 add(data, state, action, next_state)
                 state = next_state
@@ -71,8 +50,5 @@ if __name__ == '__main__':
         env.close()
         if not found:
             print("Didn't finish level {}".format(version))
-            exit(0)
         else:
             print("Finished level {}".format(version))
-        with open('test_{}.pkl'.format(version), 'wb') as file:
-            pickle.dump(data, file)

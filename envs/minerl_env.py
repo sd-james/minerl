@@ -63,8 +63,9 @@ class MineRLEnv(gym.Env):
         self._seed = seeds[version]
         self.viewer = None
         self.early_stop = kwargs.get('early_stop', False)
+        self.noisy = kwargs.get('noisy', True)
         self.version = version
-        self._env, self._doors, self._objects = Task.generate(version, self.early_stop)
+        self._env, self._doors, self._objects = Task.generate(version, self.early_stop, self.noisy)
 
         self.option_names = ["WalkToItem",
                              "AttackItem",
@@ -95,7 +96,7 @@ class MineRLEnv(gym.Env):
         raise NotImplementedError
 
     def admissable_actions(self, positive_only=True):
-        x = Task.admissable_actions(self._env, self._doors, self._objects, early_stop=self.early_stop)
+        x = Task.admissable_actions(self._env, self._doors, self._objects, early_stop=self.early_stop, noisy=self.noisy)
         if positive_only:
             return x[0]
         return x

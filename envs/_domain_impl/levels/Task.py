@@ -93,7 +93,7 @@ def create_objects(seed):
     return doors, objects
 
 
-def generate(version, early_stop, **kwargs):
+def generate(version, early_stop, noisy, **kwargs):
     seeds = [31, 33, 76, 82, 92]
     seed = seeds[version]
 
@@ -129,10 +129,10 @@ def generate(version, early_stop, **kwargs):
     gold.id = 4
 
     objects = [table, pickaxe, chest, ore, gold]
-    if early_stop:
-        name = 'ChestClockEarlyStop{}-v0'.format(version)
-    else:
-        name = 'ChestClock{}-v0'.format(version)
+
+    name = 'ChestClock{}{}{}-v0'.format('EarlyStop' if early_stop else '',
+                                        'Noisy' if noisy else '',
+                                        version)
 
     env = TeleportWrapper(gym.make(name))
 
@@ -148,7 +148,7 @@ def generate(version, early_stop, **kwargs):
     return env, doors, objects
 
 
-def admissable_actions(env, doors, objects, early_stop=False):
+def admissable_actions(env, doors, objects, early_stop=False, noisy=True):
     actions = []
 
     disallowed = []

@@ -9,12 +9,14 @@ class ChestClock(SimpleEnvSpec):
     def determine_success_from_rewards(self, rewards: list) -> bool:
         return 10 in rewards
 
-    def __init__(self, version: int, stop_early=False):
-        if stop_early:
-            name = 'ChestClockEarlyStop{}-v0'.format(version)
-        else:
-            name = 'ChestClock{}-v0'.format(version)
+    def __init__(self, version: int, stop_early=False, noisy=True):
+
+        name = 'ChestClock{}{}{}-v0'.format('EarlyStop'if stop_early else '',
+                                            'Noisy' if noisy else '',
+                                            version)
+
         self.stop_early = stop_early
+        self.noisy = noisy
         xml = 'chest_clock_{}.xml'.format(version)
         super().__init__(name, xml)
 

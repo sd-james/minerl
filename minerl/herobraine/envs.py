@@ -33,6 +33,12 @@ MINERL_CHEST_CLOCK_2_V0 = ChestClock(version=2, stop_early=False)
 MINERL_CHEST_CLOCK_3_V0 = ChestClock(version=3, stop_early=False)
 MINERL_CHEST_CLOCK_4_V0 = ChestClock(version=4, stop_early=False)
 
+MINERL_CHEST_CLOCK_NO_NOISE_0_V0 = ChestClock(version=0, stop_early=False, noisy=False)
+MINERL_CHEST_CLOCK_NO_NOISE_1_V0 = ChestClock(version=1, stop_early=False, noisy=False)
+MINERL_CHEST_CLOCK_NO_NOISE_2_V0 = ChestClock(version=2, stop_early=False, noisy=False)
+MINERL_CHEST_CLOCK_NO_NOISE_3_V0 = ChestClock(version=3, stop_early=False, noisy=False)
+MINERL_CHEST_CLOCK_NO_NOISE_4_V0 = ChestClock(version=4, stop_early=False, noisy=False)
+
 MINERL_CHEST_CLOCK_EARLY_STOP_0_V0 = ChestClock(version=0, stop_early=True)
 MINERL_CHEST_CLOCK_EARLY_STOP_1_V0 = ChestClock(version=1, stop_early=True)
 MINERL_CHEST_CLOCK_EARLY_STOP_2_V0 = ChestClock(version=2, stop_early=True)
